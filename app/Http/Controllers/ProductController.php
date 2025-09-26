@@ -170,41 +170,32 @@ class ProductController extends Controller
 
     public function search(Request $request)
     {
-         /* $query = $request->input('search'); */
-       $query = $request->post('search', '');
+        $query = $request->input('search') ?? $request->post('search', '');
 
-        /*  $products = Product::where('name', 'LIKE', "%{$query}%")
-            ->with('images')
-            ->take(5)
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        $products = Product::where('name', 'LIKE', "%{$query}%")
+            ->orWhere('description', 'LIKE', "%{$query}%")
+            ->with(['images', 'category'])
+            ->where('status', 'available') // Solo productos disponibles
+            ->limit(10)
             ->get()
             ->map(function ($product) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
                     'price' => $product->price,
-                    'image' => $product->images->isNotEmpty() ? asset('storage/' . $product->images->first()->image_path) : asset('assets/images/no-image.png'),
+                    'stock' => $product->quantity, // Stock actual
+                    'image' => $product->images->isNotEmpty()
+                        ? asset('storage/' . $product->images->first()->image_path)
+                        : asset('assets/images/default-product.png'),
+                    'category' => $product->category ? $product->category->name : ''
                 ];
-            }); */
+            });
 
-            $products = Product::with('images')
-            ->where('name', 'LIKE', "%{$query}%")
-            ->limit(10)
-            ->get();
-
-            $results = $products->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'image' => $product->images->first()
-                    ? asset('storage/' . $product->images->first()->image_path)
-                    : asset('assets/images/default-product.png'),
-                'price' => $product->price,
-            ];
-        });
-
-         return response()->json($results);
-
-         /* return response()->json($products); */
+        return response()->json($products);
     }
 
 }
