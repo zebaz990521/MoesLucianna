@@ -263,6 +263,7 @@
                                 <div class="mb-3">
                                     <label for="supplier_id" class="form-label">Proveedor</label>
                                     <select  name="supplier_id" id="supplier_id"  class="js-example-basic-single" required>
+                                        <option value="" disabled selected>Seleccione un proveedor...</option>
                                         @foreach ($suppliers as $supplier)
                                             <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
                                         @endforeach
@@ -272,6 +273,7 @@
                                 <div class="mb-3">
                                     <label for="document_type_id" class="form-label">Tipo de Documento</label>
                                     <select name="document_type_id" id="document_type_id" class="js-example-basic-single" >
+                                        <option value="" disabled selected>Seleccione un tipo de factura de documento...</option>
                                         @foreach ($documentTypes as $documentType)
                                             <option value="{{ $documentType->id }}">{{ $documentType->name }}</option>
                                         @endforeach
@@ -302,11 +304,13 @@
                                 <h5>Detalles de la Compra</h5>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Buscar Producto</label>
-                                    <input type="text" id="searchProduct" class="form-control" placeholder="Buscar producto...">
+                                    <label for="searchProduct" class="form-label">Buscar Producto</label>
+                                     <input type="text" id="searchProduct" class="form-control" placeholder="Buscar producto...">
                                     <div id="productResults" class="list-group mt-2"></div>
                                 </div>
                                 <div id="selectedProduct" class="d-none">
+
+
                                     <div class="mb-3">
                                         <label class="form-label">Producto Seleccionado</label>
                                         <div class="d-flex align-items-center">
@@ -384,15 +388,20 @@
           let purchaseDetails = [];
 
             $('#searchProduct').on('input', function() {
-                let query = $(this).val();
+                let query = $(this).val().trim();
+                let results = $('#productResults');
                 if (query.length > 2) {
                     $.ajax({
                         url: "{{ route('products.search') }}",
-                        type: "GET",
+                        type: "POST",
                         data: { search: query },
+                        dataType: "json",
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
                         success: function(response) {
-                            let results = $('#productResults');
-                            results.empty()
+
+                           /*  results.empty()
                             response.forEach(product => {
                                 results.append(`
                                 <a  class="list-group-item list-group-item-action" onclick="selectProduct(${product.id}, '${product.name}', '${product.image}', ${product.price})">
@@ -403,13 +412,66 @@
                                         </p>
                                     </div
                                 </a>`);
-                            });
-                        }
-                    });
+                            }); */
+
+                    results.empty();
+                    if (!Array.isArray(response) || response.length === 0) {
+                        // opcional: mostrar "no results"
+                        // results.append('<div class="list-group-item">No se encontraron productos</div>');
+                        return;
+                    }
+
+                    response.forEach(function(product) {
+                        // crear elementos con jQuery en lugar de interpolar strings (evita problemas con comillas)
+                        let $a = $('<a/>', {
+                            href: '#',
+                            'class': 'list-group-item list-group-item-action product-result'
+                        });
+
+                        let $inner = $('<div/>', { 'class': 'd-flex gap-2 align-items-center' });
+                        let $img = $('<img/>', {
+                            src: product.image,
+                            alt: 'imagen',
+                            width: 40,
+                            height: 30,
+                            'class': 'rounded'
+                        });
+                        let $p = $('<p/>', { 'class': 'm-0 ms-2' }).text(product.name);
+
+                        $inner.append($img).append($p);
+                        $a.append($inner);
+
+                        // almacenar datos seguros usando .data()
+                        $a.data('id', product.id);
+                        $a.data('name', product.name);
+                        $a.data('image', product.image);
+                        $a.data('price', product.price);
+
+                        results.append($a);
+                        });
+                    },
+                    error: function(xhr, status, err) {
+                        // en caso de error limpiar resultados
+                        results.empty();
+                        console.error('Error en búsqueda de productos:', err);
+                }
+                });
                 } else {
-                    let results = $('#productResults');
+                    /* let results = $('#productResults'); */
                     results.empty()
                 }
+            });
+
+            // Delegación de evento: seleccionar producto desde la lista
+            $(document).on('click', '.product-result', function(e) {
+                e.preventDefault();
+                let $el = $(this);
+                let id = $el.data('id');
+                let name = $el.data('name');
+                let image = $el.data('image');
+                let price = $el.data('price');
+
+                selectProduct(id, name, image, price);
             });
 
             function selectProduct(id, name, image, price) {
@@ -454,7 +516,7 @@
 
                 purchaseDetails.forEach((item, index) => {
                     totalCost += item.subtotal;
-                    tableBody.append(`
+                    /* tableBody.append(`
                         <tr>
                             <td><img src="${item.image}" class="img-thumbnail" width="80"></td>
                             <td>${item.name}</td>
@@ -466,7 +528,21 @@
                                 <a class="btn btn-danger btn-sm" onclick="removeProduct(${index})">Eliminar</a>
                             </td>
                         </tr>
-                    `);
+                    `); */
+                     // construir fila seguro con jQuery
+                    let $tr = $('<tr/>');
+                    let $tdImg = $('<td/>').append($('<img/>', { src: item.image, class: 'img-thumbnail', width: 80 }));
+                    let $tdName = $('<td/>').text(item.name);
+                    let $tdQty = $('<td/>').text(item.quantity);
+                    let $tdPrice = $('<td/>').text(`$${item.unit_cost.toFixed(2)}`);
+                    let $tdSubtotal = $('<td/>').text(`$${item.subtotal.toFixed(2)}`);
+                    let $actions = $('<td/>').append(
+                        $('<a/>', { href: '#', class: 'btn btn-warning btn-sm me-1', text: 'Editar', click: function(e){ e.preventDefault(); editProduct(index); } }),
+                        $('<a/>', { href: '#', class: 'btn btn-danger btn-sm', text: 'Eliminar', click: function(e){ e.preventDefault(); removeProduct(index); } })
+                    );
+
+                    $tr.append($tdImg, $tdName, $tdQty, $tdPrice, $tdSubtotal, $actions);
+                    tableBody.append($tr);
                 });
 
                 $('#total_cost').val(totalCost.toFixed(2));
@@ -528,16 +604,16 @@
                     Swal.fire("Actualizado", "El producto ha sido actualizado.", "success");
                 }
             });
-        }
 
-        $(document).ready(function () {
             $('#supplier_id').select2({
-                width: '100%'
+                width: '100%',
+                placeholder: 'Seleccione un proveedor...'
             })
             $('#document_type_id').select2({
-                width: '100%'
+                width: '100%',
+                placeholder: 'Seleccione un tipo de documento...'
             })
-        })
+        }
         </script>
     </x-slot>
 

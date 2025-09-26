@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
@@ -169,9 +170,10 @@ class ProductController extends Controller
 
     public function search(Request $request)
     {
-        $query = $request->input('search');
+         /* $query = $request->input('search'); */
+       $query = $request->post('search', '');
 
-        $products = Product::where('name', 'LIKE', "%{$query}%")
+        /*  $products = Product::where('name', 'LIKE', "%{$query}%")
             ->with('images')
             ->take(5)
             ->get()
@@ -182,9 +184,27 @@ class ProductController extends Controller
                     'price' => $product->price,
                     'image' => $product->images->isNotEmpty() ? asset('storage/' . $product->images->first()->image_path) : asset('assets/images/no-image.png'),
                 ];
-            });
+            }); */
 
-        return response()->json($products);
+            $products = Product::with('images')
+            ->where('name', 'LIKE', "%{$query}%")
+            ->limit(10)
+            ->get();
+
+            $results = $products->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'image' => $product->images->first()
+                    ? asset('storage/' . $product->images->first()->image_path)
+                    : asset('assets/images/default-product.png'),
+                'price' => $product->price,
+            ];
+        });
+
+         return response()->json($results);
+
+         /* return response()->json($products); */
     }
 
 }

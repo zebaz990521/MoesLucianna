@@ -45,7 +45,7 @@ class PurchaseController extends Controller
     public function store(Request $request)
     {
         //
-      /*   dd($request->all()); */
+        /* dd($request->all());  */
 
 
 
@@ -53,7 +53,7 @@ class PurchaseController extends Controller
         'details' => json_decode($request->input('details'), true)
         ]);
 
-        dd($request->details);
+        /* dd($request->details); */
 
         /* dd($request->input('details')); */
         $request->validate([

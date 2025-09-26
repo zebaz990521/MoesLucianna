@@ -29,7 +29,8 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('suppliers', SupplierController::class)->except(['show']);
     Route::resource('users', UserController::class)->except(['show']);
     Route::resource('products', ProductController::class)->except(['show']);
-    Route::get('/products/search', [ProductController::class, 'search'])->name('products.search');
+    /* Route::get('/products/search', [ProductController::class, 'search'])->name('products.search'); */
+    Route::post('/products/search', [ProductController::class, 'search'])->name('products.search');
     Route::delete('/product-images/{id}', [ProductController::class, 'deleteImage']);
 
     Route::resource('purchases', PurchaseController::class);
