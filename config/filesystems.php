@@ -60,6 +60,16 @@ return [
             'report' => false,
         ],
 
+        'gcs' => [
+            'driver' => 'gcs',
+            'project_id' => env('GOOGLE_CLOUD_PROJECT_ID', 'your-project-id'),
+            'bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET', 'your-bucket-name'),
+            'path_prefix' => env('GOOGLE_CLOUD_STORAGE_PATH_PREFIX', null),
+            'api_url' => env('GOOGLE_CLOUD_STORAGE_API_URI', null),
+            'visibility' => 'public',
+            'key_file' => base_path(env('GOOGLE_CLOUD_KEY_FILE', null)), // ruta al JSON de credenciales
+        ],
+
     ],
 
     /*

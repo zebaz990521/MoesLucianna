@@ -313,7 +313,7 @@
                                 <div id="selectedProduct" class="d-none">
                                     <div class="card border-primary">
                                         <div class="card-header bg-primary text-white">
-                                            <h6 class="mb-0">Producto Seleccionado</h6>
+                                            <h6 class="mb-0 text-white">Producto Seleccionado</h6>
                                         </div>
                                         <div class="card-body">
                                             <div class="d-flex align-items-center mb-3">
@@ -410,17 +410,20 @@
             // Inicializar Select2 para proveedor y tipo de documento
             $('#supplier_id').select2({
                 width: '100%',
+                language: 'es',
                 placeholder: 'Seleccione un proveedor...'
             });
 
             $('#document_type_id').select2({
                 width: '100%',
+                language: 'es',
                 placeholder: 'Seleccione un tipo de documento...'
             });
 
             // Inicializar Select2 para productos con AJAX
             $('#productSelect2').select2({
                 width: '100%',
+                language: 'es',
                 placeholder: 'Buscar producto por nombre...',
                 allowClear: true,
                 minimumInputLength: 2,
@@ -624,9 +627,9 @@
                     $('<img/>', {
                         src: item.image,
                         class: 'img-thumbnail',
-                        width: 60,
-                        height: 60,
-                        style: 'object-fit: cover;'
+                        width: '50px',
+                        height: '50px',
+                        style: 'object-fit: cover; width: 80px; height: 60px;'
                     })
                 );
                 let $tdName = $('<td/>').html(`
