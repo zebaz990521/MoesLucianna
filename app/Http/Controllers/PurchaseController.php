@@ -14,6 +14,7 @@ use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+
 class PurchaseController extends Controller
 {
     /**
@@ -74,7 +75,17 @@ class PurchaseController extends Controller
             $invoicePath = null;
             if ($request->hasFile('purchase_invoice')) {
                 try {
-                    $file = $request->file('purchase_invoice');
+
+                    /* OTRA FORMA */
+                    /* composer require google/cloud-storage */
+                   /*  $file = $request->file('purchase_invoice');
+
+                    // Verificar configuración de GCS
+                    $bucketName = env('GOOGLE_CLOUD_STORAGE_BUCKET');
+                    $projectId = env('GOOGLE_CLOUD_PROJECT_ID');
+                    $keyFile = env('GOOGLE_CLOUD_KEY_FILE');
+
+                    \Log::info("Intentando subir a GCS - Bucket: {$bucketName}, Project: {$projectId}, KeyFile: {$keyFile}");
 
                     // Crear estructura de directorios por año y mes
                     $year = date('Y');
@@ -91,12 +102,91 @@ class PurchaseController extends Controller
 
                     // Subir archivo a Google Cloud Storage con estructura de directorios
                     $fullPath = $directoryPath . '/' . $fileName;
+
+                    \Log::info("Subiendo archivo a GCS: {$fullPath}");
+
+                    // Usar directamente la librería de Google Cloud Storage
+                    $keyFilePath = base_path(env('GOOGLE_CLOUD_KEY_FILE'));
+                    $credentials = json_decode(file_get_contents($keyFilePath), true);
+
+                    $client = new \Google\Cloud\Storage\StorageClient([
+                        'projectId' => $credentials['project_id'],
+                        'keyFile' => $credentials
+                    ]);
+
+                    $bucket = $client->bucket(env('GOOGLE_CLOUD_STORAGE_BUCKET'));
+                    $object = $bucket->upload($file->getContent(), [
+                        'name' => $fullPath,
+                        'metadata' => [
+                            'cacheControl' => 'public,max-age=86400',
+                            'contentType' => $file->getMimeType()
+                        ]
+                    ]);
+
+                    if ($object) {
+                        // Construir URL pública
+                        $invoicePath = "https://storage.googleapis.com/" . env('GOOGLE_CLOUD_STORAGE_BUCKET') . "/{$fullPath}";
+
+                        // Log exitoso
+                        \Log::info("Factura subida exitosamente a GCS: {$fullPath}");
+                        \Log::info("URL pública: {$invoicePath}");
+                    } else {
+                        throw new \Exception('Error al subir el archivo a Google Cloud Storage');
+                    }
+
+                } catch (\Exception $e) {
+                    // Log del error
+                    \Log::error('Error al subir factura a GCS: ' . $e->getMessage());
+
+                    // Fallback: subir al almacenamiento local con la misma estructura
+                    try {
+                        $year = date('Y');
+                        $monthName = date('F');
+                        $directoryPath = "{$year}_facturas/{$monthName}";
+
+                        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                        $extension = $file->getClientOriginalExtension();
+                        $fileName = $originalName . '_' . time() . '_' . uniqid() . '.' . $extension;
+
+                        $invoicePath = $file->storeAs($directoryPath, $fileName, 'public');
+                        // Construir URL para almacenamiento local
+                        $invoicePath = asset('storage/' . $invoicePath);
+
+                        \Log::info("Factura subida a almacenamiento local como fallback: {$invoicePath}");
+                    } catch (\Exception $fallbackError) {
+                        \Log::error('Error en fallback local: ' . $fallbackError->getMessage());
+                        throw new \Exception('No se pudo subir la factura');
+                    }
+                } */
+
+                $file = $request->file('purchase_invoice');
+
+                    // Crear estructura de directorios por año y mes
+                    date_default_timezone_set('America/Bogota');
+                    $year = date('Y');
+                    $month = date('m');
+                    $monthName = date('F'); // Nombre del mes en inglés
+
+                   /*  dd($monthName);
+ */
+                    // Directorio base: 2025_facturas/enero/ (ejemplo)
+                    $directoryPath = "{$year}_facturas/{$monthName}";
+
+                    // Generar nombre único para el archivo
+                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    /* dd($originalName); */
+                    $extension = $file->getClientOriginalExtension();
+                    $fileName = $originalName . '_' . time() . '_' . uniqid() . '.' . $extension;
+
+                    // Subir archivo a Google Cloud Storage con estructura de directorios
+                    $fullPath = $directoryPath . '/' . $fileName;
                     $uploadedPath = Storage::disk('gcs')->putFileAs($directoryPath, $file, $fileName, 'public');
 
                     if ($uploadedPath) {
                         // Construir URL pública manualmente para GCS
                         $bucketName = env('GOOGLE_CLOUD_STORAGE_BUCKET');
                         $invoicePath = "https://storage.googleapis.com/{$bucketName}/{$uploadedPath}";
+
 
                         // Log exitoso
                         \Log::info("Factura subida exitosamente a GCS: {$fullPath}");
@@ -119,7 +209,7 @@ class PurchaseController extends Controller
                         $fileName = $originalName . '_' . time() . '_' . uniqid() . '.' . $extension;
 
                         $invoicePath = $file->storeAs($directoryPath, $fileName, 'public');
-                        // Construir URL para almacenamiento local
+                       // Construir URL para almacenamiento local
                         $invoicePath = asset('storage/' . $invoicePath);
 
                         \Log::info("Factura subida a almacenamiento local como fallback: {$invoicePath}");
