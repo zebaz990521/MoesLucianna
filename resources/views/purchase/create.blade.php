@@ -257,7 +257,7 @@
                                 </div>
                             @endif
 
-                            <form action="{{ route('purchases.store') }}" method="POST" enctype="multipart/form-data">
+                            <form id="purchaseForm" action="{{ route('purchases.store') }}" method="POST" enctype="multipart/form-data">
                                 @csrf
 
                                 <div class="mb-3">
@@ -407,6 +407,27 @@
         let purchaseDetails = [];
 
         $(document).ready(function () {
+            $('#purchaseForm').submit(function (e) {
+                e.preventDefault();
+
+                Swal.fire({
+                    title: '¿Confirmar compra?',
+                    text: "¿Deseas registrar esta compra?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Sí, confirmar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        this.submit(); // Envía el formulario si el usuario confirma
+                    }
+                });
+            });
+
+        
+
             // Inicializar Select2 para proveedor y tipo de documento
             $('#supplier_id').select2({
                 width: '100%',
@@ -419,6 +440,8 @@
                 language: 'es',
                 placeholder: 'Seleccione un tipo de documento...'
             });
+
+
 
             // Inicializar Select2 para productos con AJAX
             $('#productSelect2').select2({
@@ -467,6 +490,8 @@
                 escapeMarkup: function (markup) { return markup; }
             });
 
+
+
             // Evento cuando se selecciona un producto
             $('#productSelect2').on('select2:select', function (e) {
                 let data = e.params.data;
@@ -490,7 +515,7 @@
                     '<img class="me-3 rounded" style="width: 40px; height: 30px; object-fit: cover;" />' +
                     '<div>' +
                         '<div class="fw-bold"></div>' +
-                        '<small class="text-muted"></small>' +
+                        '<small class="text-white"></small>' +
                     '</div>' +
                 '</div>'
             );
@@ -515,7 +540,9 @@
             $('#selectedProduct').removeClass('d-none');
             $('#productName').text(name);
             $('#productImage').attr('src', image);
-            $('#unit_cost').val(price);
+            $('#unit_cost').val(price)
+
+
             $('#add-product').data('id', id)
                             .data('name', name)
                             .data('image', image)

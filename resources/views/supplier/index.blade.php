@@ -117,6 +117,7 @@
     <x-slot:js>
         @include('partials.js')
         <script>
+            
             $(document).ready(function() {
                 $('#suppliersTable').DataTable({
                     "language": {

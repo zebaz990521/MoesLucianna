@@ -5,15 +5,20 @@ namespace App\Http\Controllers;
 
 use App\Models\DocumentType;
 use App\Models\Supplier;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\Purchase;
 use App\Models\PurchaseDetail;
 use App\Models\Inventory;
 use App\Models\Transaction;
 use App\Models\Product;
+use Illuminate\Session\Store;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Http\File;
 
 class PurchaseController extends Controller
 {
@@ -162,21 +167,20 @@ class PurchaseController extends Controller
                 $file = $request->file('purchase_invoice');
 
                     // Crear estructura de directorios por año y mes
-                    date_default_timezone_set('America/Bogota');
                     $year = date('Y');
                     $month = date('m');
                     $monthName = date('F'); // Nombre del mes en inglés
 
-                   /*  dd($monthName);
- */
+
+
                     // Directorio base: 2025_facturas/enero/ (ejemplo)
-                    $directoryPath = "{$year}_facturas/{$monthName}";
+                    $directoryPath = "{$year}_invoices/purchases/{$monthName}/uploads";
 
                     // Generar nombre único para el archivo
-                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    /* $originalName = 'factura_compra'; */
                     /* dd($originalName); */
                     $extension = $file->getClientOriginalExtension();
-                    $fileName = $originalName . '_' . time() . '_' . uniqid() . '.' . $extension;
+                    $fileName = 'invoice_purchase' . '_' . Carbon::now()->format('Y-m-d') . '_' . Carbon::now()->format('H-i-s') .  '_' . uniqid() . '.' . $extension;
 
                     // Subir archivo a Google Cloud Storage con estructura de directorios
                     $fullPath = $directoryPath . '/' . $fileName;
@@ -202,11 +206,20 @@ class PurchaseController extends Controller
                     try {
                         $year = date('Y');
                         $monthName = date('F');
-                        $directoryPath = "{$year}_facturas/{$monthName}";
+                       /*  $directoryPath = "{$year}_facturas/{$monthName}";
 
                         $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                         $extension = $file->getClientOriginalExtension();
-                        $fileName = $originalName . '_' . time() . '_' . uniqid() . '.' . $extension;
+                        $fileName = $originalName . '_' . time() . '_' . uniqid() . '.' . $extension; */
+
+                            // Directorio base: 2025_facturas/enero/ (ejemplo)
+                        $directoryPath = "{$year}_invoices/purchases/{$monthName}/uploads";
+
+                    // Generar nombre único para el archivo
+                    /* $originalName = 'factura_compra'; */
+                    /* dd($originalName); */
+                        $extension = $file->getClientOriginalExtension();
+                        $fileName = 'invoice_purchase' . '_' . Carbon::now()->format('Y-m-d') . '_' . Carbon::now()->format('H-i-s') .  '_' . uniqid() . '.' . $extension;
 
                         $invoicePath = $file->storeAs($directoryPath, $fileName, 'public');
                        // Construir URL para almacenamiento local
@@ -229,6 +242,7 @@ class PurchaseController extends Controller
                 'purchase_datetime' => $request->purchase_datetime,
                 'status' => $request->status,
                 'purchase_invoice' => $invoicePath,
+                'pdf_url' => ''
             ]);
 
             $totalCost = 0;
@@ -255,7 +269,7 @@ class PurchaseController extends Controller
                     'product_id' => $detail['product_id'],
                     'type' => 'purchase',
                     'quantity' => $detail['quantity'],
-                    'reason' => 'compra',
+                    'reason' => 'Compra ID: ' . $purchase->id,
                     'user_id' => Auth::id(),
                 ]);
             }
@@ -271,6 +285,94 @@ class PurchaseController extends Controller
                 'description' => 'Compra de productos al proveedor ID: ' . $purchase->supplier_id,
                 'user_id' => Auth::id(),
             ]);
+
+           // 5️⃣ GENERAR PDF RESUMEN
+        try {
+                // Crear estructura de directorios por año y mes
+                $year = date('Y');
+                $month = date('m');
+                $monthName = date('F'); // Nombre del mes en inglés
+            // Crear QR temporal (URL se completará luego)
+
+            // Asegurar que el directorio temporal exista
+            $tempPath = storage_path('app/temp');
+            if (!file_exists($tempPath)) {
+                mkdir($tempPath, 0775, true);
+            }
+            $tempPdfPath = storage_path("app/temp/purchase_{$purchase->id}.pdf");
+            $pdfDirectory = "{$year}_invoices/purchases/{$monthName}/generated";
+            $pdfName = "purchase-{$purchase->id}.pdf";
+
+            // URL final del PDF en GCS
+            $bucketName = env('GOOGLE_CLOUD_STORAGE_BUCKET');
+            $expectedPdfUrl = "https://storage.googleapis.com/{$bucketName}/{$pdfDirectory}/{$pdfName}";
+
+            // Generar PDF desde vista Blade
+            $pdf = Pdf::loadView('purchase.pdf', [
+                'purchase' => $purchase->load(['supplier', 'user', 'documentType', 'purchaseDetails.product']),
+                'pdfUrl' => $expectedPdfUrl
+            ])->setPaper('a4');
+
+            // Guardar localmente y subir
+            $pdf->save($tempPdfPath);
+            $uploadedPdf = Storage::disk('gcs')->putFileAs($pdfDirectory, new File($tempPdfPath), $pdfName, 'public');
+
+            // Crear URL pública
+            $pdfUrl = "https://storage.googleapis.com/{$bucketName}/{$uploadedPdf}";
+
+            // Actualizar registro con link al PDF
+            $purchase->update(['pdf_url' => $pdfUrl]);
+
+            // Eliminar archivo temporal
+            unlink($tempPdfPath);
+
+            \Log::info("PDF generado y subido correctamente: {$pdfUrl}");
+        } catch (\Exception $e) {
+            \Log::error("Error al generar PDF de la compra #{$purchase->id}: " . $e->getMessage());
+
+
+
+             // Fallback: subir al almacenamiento local con la misma estructura
+             try {
+                 $year = date('Y');
+                 $monthName = date('F');
+
+                 $tempPath = storage_path('app/temp');
+                 if (!file_exists($tempPath)) {
+                     mkdir($tempPath, 0775, true);
+                 }
+                // Crear QR temporal (URL se completará luego)
+                $tempPdfPath = storage_path("app/temp/purchase_{$purchase->id}.pdf");
+                $pdfDirectory = "{$year}_invoices/purchases/{$monthName}/generated";
+                $pdfName = "purchase-{$purchase->id}.pdf";
+
+                $pdf = Pdf::loadView('purchase.pdf', [
+                    'purchase' => $purchase->load(['supplier', 'user', 'documentType', 'purchaseDetails.product']),
+                    'pdfUrl' => $expectedPdfUrl
+                ])->setPaper('a4');
+
+                $pdf->save($tempPdfPath);
+                $fileName = 'invoice_purchase' . '_' . Carbon::now()->format('Y-m-d') . '_' . Carbon::now()->format('H-i-s') .  '_' . uniqid() . '.' . $extension;
+                $pdfPathInvoice = Storage::disk('public')->putFileAs($pdfDirectory, $tempPdfPath, $fileName, 'public');
+
+
+
+
+                // Construir URL para almacenamiento local
+                 $invoicePathPdf = asset('storage/' . $pdfPathInvoice);
+
+                 // Actualizar registro con link al PDF
+                $purchase->update(['pdf_url' => $invoicePathPdf]);
+                // Eliminar archivo temporal
+                unlink($tempPdfPath);
+
+                 \Log::info("Factura subida a almacenamiento local como fallback: {$invoicePath}");
+
+             } catch (\Exception $fallbackError) {
+                 \Log::error('Error en fallback local: ' . $fallbackError->getMessage());
+                 throw new \Exception('No se pudo subir la factura');
+             }
+        }
         });
 
         return redirect()->route('purchases.index')->with('success', 'Compra registrada correctamente.');
