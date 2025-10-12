@@ -257,12 +257,13 @@
                                 </div>
                             @endif
 
-                            <form action="{{ route('purchases.store') }}" method="POST" enctype="multipart/form-data">
+                            <form id="purchaseForm" action="{{ route('purchases.store') }}" method="POST" enctype="multipart/form-data">
                                 @csrf
 
                                 <div class="mb-3">
                                     <label for="supplier_id" class="form-label">Proveedor</label>
                                     <select  name="supplier_id" id="supplier_id"  class="js-example-basic-single" required>
+                                        <option value="" disabled selected>Seleccione un proveedor...</option>
                                         @foreach ($suppliers as $supplier)
                                             <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
                                         @endforeach
@@ -272,6 +273,7 @@
                                 <div class="mb-3">
                                     <label for="document_type_id" class="form-label">Tipo de Documento</label>
                                     <select name="document_type_id" id="document_type_id" class="js-example-basic-single" >
+                                        <option value="" disabled selected>Seleccione un tipo de factura de documento...</option>
                                         @foreach ($documentTypes as $documentType)
                                             <option value="{{ $documentType->id }}">{{ $documentType->name }}</option>
                                         @endforeach
@@ -302,35 +304,50 @@
                                 <h5>Detalles de la Compra</h5>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Buscar Producto</label>
-                                    <input type="text" id="searchProduct" class="form-control" placeholder="Buscar producto...">
-                                    <div id="productResults" class="list-group mt-2"></div>
+                                    <label for="productSelect2" class="form-label">Buscar Producto</label>
+                                    <select id="productSelect2" class="form-control" style="width: 100%;">
+                                        <option value="">Seleccione un producto...</option>
+                                    </select>
                                 </div>
+
                                 <div id="selectedProduct" class="d-none">
-                                    <div class="mb-3">
-                                        <label class="form-label">Producto Seleccionado</label>
-                                        <div class="d-flex align-items-center">
-                                            <img id="productImage" src="" class="img-thumbnail me-3" width="80">
-                                            <strong id="productName"></strong>
+                                    <div class="card border-primary">
+                                        <div class="card-header bg-primary text-white">
+                                            <h6 class="mb-0 text-white">Producto Seleccionado</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <img id="productImage" src="" class="img-thumbnail me-3" width="80" height="80" style="object-fit: cover;">
+                                                <div>
+                                                    <strong id="productName"></strong>
+                                                    <div id="productStock" class="text-muted small"></div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <label for="unit_cost" class="form-label">Costo Unitario</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">$</span>
+                                                        <input type="number" id="unit_cost" class="form-control" min="0.01" step="0.01" placeholder="0.00">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="quantity" class="form-label">Cantidad</label>
+                                                    <input type="number" id="quantity" class="form-control" min="1" placeholder="1">
+                                                </div>
+                                            </div>
+
+                                            <button type="button" class="btn btn-primary mt-3 w-100" id="add-product">
+                                                <i class="fas fa-plus me-2"></i>Agregar Producto
+                                            </button>
                                         </div>
                                     </div>
-
-                                    <div class="mb-3">
-                                        <label for="unit_cost" class="form-label">Costo Unitario</label>
-                                        <input type="number" id="unit_cost" class="form-control" min="0.01" step="0.01">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="quantity" class="form-label">Cantidad</label>
-                                        <input type="number" id="quantity" class="form-control" min="1">
-                                    </div>
-
-                                    <button type="button" class="btn btn-primary mb-3" id="add-product">Agregar Producto</button>
                                 </div>
 
                                 <div class="table-responsive">
                                     <table class="table table-striped table-bordered">
-                                        <thead>
+                                        <thead class="table-dark">
                                             <tr>
                                                 <th>Imagen</th>
                                                 <th>Producto</th>
@@ -341,6 +358,12 @@
                                             </tr>
                                         </thead>
                                         <tbody id="purchase-details">
+                                            <tr id="empty-row" class="text-center text-muted">
+                                                <td colspan="6">
+                                                    <i class="fas fa-shopping-cart fa-2x mb-2 d-block"></i>
+                                                    No hay productos agregados
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -381,163 +404,346 @@
         @include('partials.js')
 
         <script>
-          let purchaseDetails = [];
+        let purchaseDetails = [];
 
-            $('#searchProduct').on('input', function() {
-                let query = $(this).val();
-                if (query.length > 2) {
-                    $.ajax({
-                        url: "{{ route('products.search') }}",
-                        type: "GET",
-                        data: { search: query },
-                        success: function(response) {
-                            let results = $('#productResults');
-                            results.empty()
-                            response.forEach(product => {
-                                results.append(`
-                                <a  class="list-group-item list-group-item-action" onclick="selectProduct(${product.id}, '${product.name}', '${product.image}', ${product.price})">
-                                    <div class="d-flex gap-2 justify-content-start align-item-center">
-                                        <img src="${product.image}" alt="imagen" width="40" height="30">
-                                        <p class="m-0">
-                                            ${product.name}
-                                        </p>
-                                    </div
-                                </a>`);
-                            });
-                        }
-                    });
-                } else {
-                    let results = $('#productResults');
-                    results.empty()
-                }
-            });
+        $(document).ready(function () {
+            $('#purchaseForm').submit(function (e) {
+                e.preventDefault();
 
-            function selectProduct(id, name, image, price) {
-                $('#productResults').empty();
-                $('#selectedProduct').removeClass('d-none');
-                $('#productName').text(name);
-                $('#productImage').attr('src', image);
-                $('#unit_cost').val(price);
-                $('#add-product').data('id', id).data('name', name).data('image', image);
-            }
-
-            $('#add-product').on('click', function() {
-                let productId = $(this).data('id');
-                let productName = $(this).data('name');
-                let productImage = $(this).data('image');
-                let unitPrice = parseFloat($('#unit_cost').val());
-                let quantity = parseInt($('#quantity').val());
-                let subtotal = unitPrice * quantity;
-
-                if (!unitPrice || unitPrice <= 0) {
-                    Swal.fire("Error", "El costo unitario debe ser mayor a 0.", "error");
-                    return;
-                }
-
-                if (!quantity || quantity < 1) {
-                    Swal.fire("Error", "La cantidad debe ser mayor a 0.", "error");
-                    return;
-                }
-
-                purchaseDetails.push({ product_id: productId, name: productName, image: productImage, quantity: quantity, unit_cost: unitPrice, subtotal: subtotal });
-
-                $('#details').val(JSON.stringify(purchaseDetails));
-                updateTable();
-                $('#selectedProduct').addClass('d-none');
-                $('#searchProduct').val('');
-            });
-
-            function updateTable() {
-                let tableBody = $('#purchase-details');
-                tableBody.empty();
-                let totalCost = 0;
-
-                purchaseDetails.forEach((item, index) => {
-                    totalCost += item.subtotal;
-                    tableBody.append(`
-                        <tr>
-                            <td><img src="${item.image}" class="img-thumbnail" width="80"></td>
-                            <td>${item.name}</td>
-                            <td>${item.quantity}</td>
-                            <td>$${item.unit_cost.toFixed(2)}</td>
-                            <td>$${item.subtotal.toFixed(2)}</td>
-                            <td>
-                                <a class="btn btn-warning btn-sm" onclick="editProduct(${index})">Editar</a>
-                                <a class="btn btn-danger btn-sm" onclick="removeProduct(${index})">Eliminar</a>
-                            </td>
-                        </tr>
-                    `);
-                });
-
-                $('#total_cost').val(totalCost.toFixed(2));
-            }
-
-            function removeProduct(index) {
                 Swal.fire({
-                    title: "¿Eliminar este producto?",
-                    text: "Esta acción no se puede deshacer",
-                    icon: "warning",
+                    title: '¿Confirmar compra?',
+                    text: "¿Deseas registrar esta compra?",
+                    icon: 'question',
                     showCancelButton: true,
-                    confirmButtonColor: "#d33",
-                    cancelButtonColor: "#3085d6",
-                    confirmButtonText: "Sí, eliminar",
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Sí, confirmar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        this.submit(); // Envía el formulario si el usuario confirma
+                    }
+                });
+            });
+
+        
+
+            // Inicializar Select2 para proveedor y tipo de documento
+            $('#supplier_id').select2({
+                width: '100%',
+                language: 'es',
+                placeholder: 'Seleccione un proveedor...'
+            });
+
+            $('#document_type_id').select2({
+                width: '100%',
+                language: 'es',
+                placeholder: 'Seleccione un tipo de documento...'
+            });
+
+
+
+            // Inicializar Select2 para productos con AJAX
+            $('#productSelect2').select2({
+                width: '100%',
+                language: 'es',
+                placeholder: 'Buscar producto por nombre...',
+                allowClear: true,
+                minimumInputLength: 2,
+                ajax: {
+                    url: "{{ route('products.search') }}",
+                    type: 'POST',
+                    dataType: 'json',
+                    delay: 300,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    data: function (params) {
+                        return {
+                            search: params.term,
+                            page: params.page || 1
+                        };
+                    },
+                    processResults: function (data, params) {
+                        params.page = params.page || 1;
+
+                        return {
+                            results: data.map(function(product) {
+                                return {
+                                    id: product.id,
+                                    text: product.name,
+                                    price: product.price,
+                                    image: product.image,
+                                    stock: product.stock || 0,
+                                    category: product.category || ''
+                                };
+                            }),
+                            pagination: {
+                                more: false
+                            }
+                        };
+                    },
+                    cache: true
+                },
+                templateResult: formatProductOption,
+                templateSelection: formatProductSelection,
+                escapeMarkup: function (markup) { return markup; }
+            });
+
+
+
+            // Evento cuando se selecciona un producto
+            $('#productSelect2').on('select2:select', function (e) {
+                let data = e.params.data;
+                selectProduct(data.id, data.text, data.image, data.price, data.stock, data.category);
+            });
+
+            // Evento del botón agregar producto
+            $('#add-product').on('click', function() {
+                addProductToPurchase();
+            });
+        });
+
+        // Función para formatear las opciones en el dropdown
+        function formatProductOption(product) {
+            if (product.loading) {
+                return product.text;
+            }
+
+            let $container = $(
+                '<div class="d-flex align-items-center">' +
+                    '<img class="me-3 rounded" style="width: 40px; height: 30px; object-fit: cover;" />' +
+                    '<div>' +
+                        '<div class="fw-bold"></div>' +
+                        '<small class="text-white"></small>' +
+                    '</div>' +
+                '</div>'
+            );
+
+            $container.find('img').attr('src', product.image);
+            $container.find('.fw-bold').text(product.text);
+            $container.find('small').text(`Precio: $${product.price} | Stock: ${product.stock}`);
+
+            return $container;
+        }
+
+        // Función para formatear la selección
+        function formatProductSelection(product) {
+            if (!product.id) {
+                return product.text;
+            }
+            return product.text;
+        }
+
+        // Función para seleccionar producto
+        function selectProduct(id, name, image, price, stock, category) {
+            $('#selectedProduct').removeClass('d-none');
+            $('#productName').text(name);
+            $('#productImage').attr('src', image);
+            $('#unit_cost').val(price)
+
+
+            $('#add-product').data('id', id)
+                            .data('name', name)
+                            .data('image', image)
+                            .data('stock', stock)
+                            .data('category', category);
+
+            // Mostrar información adicional del stock y categoría
+            let stockInfo = `Stock: ${stock}`;
+            if (category) {
+                stockInfo += ` | Categoría: ${category}`;
+            }
+            $('#productStock').text(stockInfo);
+        }
+
+        // Función para agregar producto a la compra
+        function addProductToPurchase() {
+            let $btn = $('#add-product');
+            let productId = $btn.data('id');
+            let productName = $btn.data('name');
+            let productImage = $btn.data('image');
+            let productStock = $btn.data('stock') || 0;
+            let productCategory = $btn.data('category') || '';
+            let unitPrice = parseFloat($('#unit_cost').val());
+            let quantity = parseInt($('#quantity').val());
+
+            // Validaciones mejoradas
+            if (!unitPrice || unitPrice <= 0) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "El costo unitario debe ser mayor a 0.",
+                });
+                return;
+            }
+
+            if (!quantity || quantity < 1) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "La cantidad debe ser mayor a 0.",
+                });
+                return;
+            }
+
+            // Verificar si el producto ya existe en la compra
+            let existingProductIndex = purchaseDetails.findIndex(item => item.product_id == productId);
+            if (existingProductIndex !== -1) {
+                Swal.fire({
+                    icon: "question",
+                    title: "Producto ya existe",
+                    text: "Este producto ya está en la compra. ¿Desea actualizar la cantidad?",
+                    showCancelButton: true,
+                    confirmButtonText: "Sí, actualizar",
                     cancelButtonText: "Cancelar"
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        purchaseDetails.splice(index, 1);
-                        $('#details').val(JSON.stringify(purchaseDetails));
+                        purchaseDetails[existingProductIndex].quantity += quantity;
+                        purchaseDetails[existingProductIndex].unit_cost = unitPrice;
+                        purchaseDetails[existingProductIndex].subtotal = purchaseDetails[existingProductIndex].quantity * unitPrice;
                         updateTable();
-                        Swal.fire("Eliminado", "El producto ha sido eliminado.", "success");
                     }
                 });
+                return;
             }
 
-        function editProduct(index) {
-            let product = purchaseDetails[index];
+            let subtotal = unitPrice * quantity;
+            purchaseDetails.push({
+                product_id: productId,
+                name: productName,
+                image: productImage,
+                quantity: quantity,
+                unit_cost: unitPrice,
+                subtotal: subtotal,
+                stock: productStock,
+                category: productCategory
+            });
 
+            $('#details').val(JSON.stringify(purchaseDetails));
+            updateTable();
+            resetProductSelection();
+        }
+
+        // Función para resetear la selección de producto
+        function resetProductSelection() {
+            $('#selectedProduct').addClass('d-none');
+            $('#productSelect2').val(null).trigger('change');
+            $('#quantity').val('');
+            $('#unit_cost').val('');
+        }
+
+        // Función mejorada para actualizar la tabla
+        function updateTable() {
+            let tableBody = $('#purchase-details');
+            let emptyRow = $('#empty-row');
+            tableBody.empty();
+            let totalCost = 0;
+
+            if (purchaseDetails.length === 0) {
+                tableBody.append(emptyRow);
+                $('#total_cost').val('0.00');
+                return;
+            }
+
+            purchaseDetails.forEach((item, index) => {
+                totalCost += item.subtotal;
+
+                let $tr = $('<tr/>');
+                let $tdImg = $('<td/>').append(
+                    $('<img/>', {
+                        src: item.image,
+                        class: 'img-thumbnail',
+                        width: '50px',
+                        height: '50px',
+                        style: 'object-fit: cover; width: 80px; height: 60px;'
+                    })
+                );
+                let $tdName = $('<td/>').html(`
+                    <div>
+                        <strong>${item.name}</strong>
+                        ${item.category ? `<br><small class="text-muted">${item.category}</small>` : ''}
+                        ${item.stock !== undefined ? `<br><small class="text-info">Stock: ${item.stock}</small>` : ''}
+                    </div>
+                `);
+                let $tdQty = $('<td/>').html(`
+                    <input type="number" class="form-control form-control-sm"
+                           value="${item.quantity}" min="1"
+                           onchange="updateQuantity(${index}, this.value)">
+                `);
+                let $tdPrice = $('<td/>').html(`
+                    <input type="number" class="form-control form-control-sm"
+                           value="${item.unit_cost}" min="0.01" step="0.01"
+                           onchange="updatePrice(${index}, this.value)">
+                `);
+                let $tdSubtotal = $('<td/>').html(`<strong>$${item.subtotal.toFixed(2)}</strong>`);
+                let $actions = $('<td/>').append(
+                    $('<button/>', {
+                        class: 'btn btn-danger btn-sm',
+                        text: 'Eliminar',
+                        click: function(e){
+                            e.preventDefault();
+                            removeProduct(index);
+                        }
+                    })
+                );
+
+                $tr.append($tdImg, $tdName, $tdQty, $tdPrice, $tdSubtotal, $actions);
+                tableBody.append($tr);
+            });
+
+            $('#total_cost').val(totalCost.toFixed(2));
+        }
+
+        // Funciones para actualizar cantidad y precio en tiempo real
+        function updateQuantity(index, newQuantity) {
+            let quantity = parseInt(newQuantity);
+            if (quantity < 1) {
+                purchaseDetails[index].quantity = 1;
+                quantity = 1;
+            }
+
+            purchaseDetails[index].quantity = quantity;
+            purchaseDetails[index].subtotal = quantity * purchaseDetails[index].unit_cost;
+
+            $('#details').val(JSON.stringify(purchaseDetails));
+            updateTable();
+        }
+
+        function updatePrice(index, newPrice) {
+            let price = parseFloat(newPrice);
+            if (price <= 0) {
+                purchaseDetails[index].unit_cost = 0.01;
+                price = 0.01;
+            }
+
+            purchaseDetails[index].unit_cost = price;
+            purchaseDetails[index].subtotal = purchaseDetails[index].quantity * price;
+
+            $('#details').val(JSON.stringify(purchaseDetails));
+            updateTable();
+        }
+
+        // Función mejorada para eliminar producto
+        function removeProduct(index) {
             Swal.fire({
-                title: "Editar Producto",
-                html: `
-                    <img src="${product.image}" class="img-thumbnail mb-3" width="100">
-                    <h3 class="mb-2">${product.name}</h3>
-                    <input type="number" id="editQuantity" class="form-control mb-2" min="1" value="${product.quantity}">
-                    <input type="number" id="editUnitCost" class="form-control" min="0.01" step="0.01" value="${product.unit_cost}">
-                `,
+                title: "¿Eliminar este producto?",
+                text: "Esta acción no se puede deshacer",
+                icon: "warning",
                 showCancelButton: true,
-                confirmButtonText: "Actualizar",
-                cancelButtonText: "Cancelar",
-                preConfirm: () => {
-                    let newQuantity = parseInt(document.getElementById('editQuantity').value);
-                    let newUnitCost = parseFloat(document.getElementById('editUnitCost').value);
-
-                    if (newQuantity < 1 || newUnitCost <= 0) {
-                        Swal.showValidationMessage("La cantidad debe ser mayor a 0 y el costo unitario debe ser mayor a 0.");
-                        return false;
-                    }
-
-                    return { newQuantity, newUnitCost };
-                }
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "Sí, eliminar",
+                cancelButtonText: "Cancelar"
             }).then((result) => {
                 if (result.isConfirmed) {
-                    purchaseDetails[index].quantity = result.value.newQuantity;
-                    purchaseDetails[index].unit_cost = result.value.newUnitCost;
-                    purchaseDetails[index].subtotal = result.value.newQuantity * result.value.newUnitCost;
-
+                    purchaseDetails.splice(index, 1);
                     $('#details').val(JSON.stringify(purchaseDetails));
                     updateTable();
-                    Swal.fire("Actualizado", "El producto ha sido actualizado.", "success");
+                    Swal.fire("Eliminado", "El producto ha sido eliminado.", "success");
                 }
             });
         }
-
-        $(document).ready(function () {
-            $('#supplier_id').select2({
-                width: '100%'
-            })
-            $('#document_type_id').select2({
-                width: '100%'
-            })
-        })
         </script>
     </x-slot>
 
