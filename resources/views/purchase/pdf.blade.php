@@ -1,11 +1,19 @@
 @php
 use Carbon\Carbon;
 /* use SimpleSoftwareIO\QrCode\Facades\QrCode; */
-
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 
+    // ✅ Crear QR directamente en memoria
+$qrCode = QrCode::create($pdfUrl)
+    ->setSize(150)
+    ->setMargin(5);
 
+$writer = new PngWriter();
+$result = $writer->write($qrCode);
+
+// ✅ Convertir el QR a base64 (sin guardarlo)
+$qrBase64 = base64_encode($result->getString());
 
 @endphp
 <!DOCTYPE html>
@@ -20,6 +28,7 @@ use Endroid\QrCode\Writer\PngWriter;
             color: #333;
             font-size: 12px;
         }
+        .qr { text-align: center; margin-top: 20px; }
         .header {
             display: flex;
             justify-content: space-between;
@@ -156,8 +165,8 @@ use Endroid\QrCode\Writer\PngWriter;
 
     <div class="qr-section">
         <p>Escanea este código para ver el documento en línea:</p>
-        <div>
-            {{    }}
+        <div class="qr">
+            <img src="data:image/png;base64,{{ $qrBase64 }}" width="120">
         </div>
         <p><a href="{{ $pdfUrl }}" target="_blank">{{ $pdfUrl }}</a></p>
     </div>

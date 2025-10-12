@@ -35,6 +35,14 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('purchases', PurchaseController::class);
     Route::post('purchases/{purchase}/cancel', [PurchaseController::class, 'cancel'])->name('purchases.cancel');
+    
+    Route::get('/purchases/{purchase}/view/{type}', [PurchaseController::class, 'viewFile'])
+        ->where('type', 'pdf|invoice')
+        ->name('purchases.viewFile');
+
+    Route::get('/purchases/{purchase}/download/{type}', [PurchaseController::class, 'downloadFile'])
+        ->where('type', 'pdf|invoice')
+        ->name('purchases.downloadFile');
 });
 
 require __DIR__.'/auth.php';

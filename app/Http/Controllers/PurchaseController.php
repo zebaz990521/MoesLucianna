@@ -12,12 +12,11 @@ use App\Models\PurchaseDetail;
 use App\Models\Inventory;
 use App\Models\Transaction;
 use App\Models\Product;
-use Illuminate\Session\Store;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Http\File;
 
 class PurchaseController extends Controller
@@ -445,5 +444,96 @@ class PurchaseController extends Controller
     public function destroy(Purchase $purchase)
     {
         //
+    }
+
+    public function viewFile(Purchase $purchase, string $type)
+    {
+        $this->authorizeAccess(); // solo usuarios autenticados
+
+        [$path, $fileName] = $this->getFilePathAndName($purchase, $type);
+
+        try {
+            $content = Storage::disk('gcs')->get($path);
+            /* $mime = Storage::disk('gcs')->mimeType($path); */
+
+            return Response::make($content, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => "inline; filename=\"{$fileName}\"",
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error al visualizar archivo en GCS: {$e->getMessage()}");
+            abort(500, 'No se pudo acceder al archivo.');
+        }
+    }
+
+    public function downloadFile(Purchase $purchase, string $type)
+    {
+        $this->authorizeAccess(); // solo usuarios autenticados
+
+        [$path, $fileName] = $this->getFilePathAndName($purchase, $type);
+
+        try {
+            $content = Storage::disk('gcs')->get($path);
+           /*  $mime = Storage::disk('gcs')->mimeType($path); */
+
+            return Response::make($content, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error al descargar archivo en GCS: {$e->getMessage()}");
+            abort(500, 'No se pudo descargar el archivo.');
+        }
+    }
+
+    /**
+     * Determina la ruta y nombre del archivo según el tipo.
+     */
+    private function getFilePathAndName(Purchase $purchase, string $type): array
+    {
+        $path = null;
+        $fileName = null;
+
+        if ($type === 'pdf' && $purchase->pdf_url) {
+            $path = $this->extractPathFromUrl($purchase->pdf_url);
+            $fileName = "purchase-{$purchase->id}.pdf";
+        } elseif ($type === 'invoice' && $purchase->purchase_invoice) {
+            $path = $this->extractPathFromUrl($purchase->purchase_invoice);
+            [$idInvoice, $datetime] = $this->extractInvoiceIdFromUrl($path);
+            $fileName = "invoice_purchase_{$datetime}_{$idInvoice}.pdf";
+        } else {
+            abort(404, 'Archivo no disponible.');
+        }
+
+        return [$path, $fileName];
+    }
+
+    /**
+     * Extrae la ruta relativa del archivo en el bucket desde su URL pública.
+     */
+    private function extractPathFromUrl($url)
+    {
+        $bucket = env('GOOGLE_CLOUD_STORAGE_BUCKET');
+        $parsed = parse_url($url, PHP_URL_PATH);
+        return ltrim(str_replace("/{$bucket}/", '', $parsed), '/');
+    }
+
+    private function extractInvoiceIdFromUrl($url)
+    {
+        $filename = basename($url);
+        $name = pathinfo($filename, PATHINFO_FILENAME);
+        $parts = explode('_', $name);
+
+        return [end($parts) ?: null, "{$parts[2]}_{$parts[3]}"];
+    }
+
+    /**
+     * Asegura que solo usuarios autenticados puedan acceder.
+     */
+    private function authorizeAccess()
+    {
+        if (!auth()->check()) {
+            abort(403, 'Acceso no autorizado.');
+        }
     }
 }
