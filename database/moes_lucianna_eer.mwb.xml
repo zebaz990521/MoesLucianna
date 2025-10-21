@@ -1,0 +1,785 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+  <info schemataCount="1">
+    <connection name="Default">
+      <defaultEngine>InnoDB</defaultEngine>
+      <defaultCharacterSetName>utf8mb4</defaultCharacterSetName>
+      <defaultCollationName>utf8mb4_unicode_ci</defaultCollationName>
+      <dbVersion>5.7</dbVersion>
+    </connection>
+  </info>
+  <schemata>
+    <schema name="moes_lucianna" sqlCreateStart="0" sqlCreateEnd="0">
+      <!-- TABLAS FUNDAMENTALES -->
+      
+      <!-- 1. SEGURIDAD Y USUARIOS -->
+      <table name="roles">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="name" type="varchar" length="255" isNotNull="1"/>
+          <column name="description" type="text"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_name" unique="1">
+            <column name="name"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="users">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="name" type="varchar" length="255" isNotNull="1"/>
+          <column name="email" type="varchar" length="255" isNotNull="1"/>
+          <column name="email_verified_at" type="timestamp"/>
+          <column name="password" type="varchar" length="255" isNotNull="1"/>
+          <column name="phone" type="varchar" length="20"/>
+          <column name="address" type="text"/>
+          <column name="photo" type="varchar" length="255"/>
+          <column name="role_id" type="bigint" isNotNull="1" refTable="roles"/>
+          <column name="remember_token" type="varchar" length="100"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_email" unique="1">
+            <column name="email"/>
+          </index>
+          <index name="idx_role_id">
+            <column name="role_id"/>
+          </index>
+        </indices>
+      </table>
+      
+      <!-- 2. CATÁLOGOS Y MAESTROS -->
+      <table name="categories">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="name" type="varchar" length="255" isNotNull="1"/>
+          <column name="description" type="text"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_name" unique="1">
+            <column name="name"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="suppliers">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="rut" type="varchar" length="20" isNotNull="1"/>
+          <column name="name" type="varchar" length="255" isNotNull="1"/>
+          <column name="email" type="varchar" length="255"/>
+          <column name="phone" type="varchar" length="20"/>
+          <column name="address" type="text"/>
+          <column name="photo" type="varchar" length="255"/>
+          <column name="status" type="enum" values="active,inactive" default="active"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_rut" unique="1">
+            <column name="rut"/>
+          </index>
+          <index name="idx_status">
+            <column name="status"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="customers">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="nit" type="varchar" length="20"/>
+          <column name="name" type="varchar" length="255" isNotNull="1"/>
+          <column name="email" type="varchar" length="255"/>
+          <column name="phone" type="varchar" length="20"/>
+          <column name="address" type="text"/>
+          <column name="photo" type="varchar" length="255"/>
+          <column name="status" type="enum" values="active,inactive" default="active"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_status">
+            <column name="status"/>
+          </index>
+          <index name="idx_name">
+            <column name="name"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="document_types">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="name" type="varchar" length="255" isNotNull="1"/>
+          <column name="code" type="varchar" length="10"/>
+          <column name="description" type="text"/>
+          <column name="type" type="enum" values="purchase,sale" default="sale"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_type">
+            <column name="type"/>
+          </index>
+        </indices>
+      </table>
+      
+      <!-- 3. PRODUCTOS Y ENVASES -->
+      <table name="products">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="user_id" type="bigint" isNotNull="1" refTable="users"/>
+          <column name="category_id" type="bigint" isNotNull="1" refTable="categories"/>
+          <column name="name" type="varchar" length="255" isNotNull="1"/>
+          <column name="description" type="text"/>
+          <column name="sku" type="varchar" length="100"/>
+          <column name="barcode" type="varchar" length="100"/>
+          <column name="price" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="cost_price" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="wholesale_price" type="decimal" precision="10" scale="2"/>
+          <column name="quantity" type="int" default="0" isNotNull="1"/>
+          <column name="min_stock" type="int" default="0"/>
+          <column name="max_stock" type="int" default="0"/>
+          <column name="has_expiration" type="tinyint" default="0"/>
+          <column name="expiration_alert_days" type="int" default="7"/>
+          <column name="has_container" type="tinyint" default="0"/>
+          <column name="alcohol_percentage" type="decimal" precision="5" scale="2"/>
+          <column name="volume_ml" type="int"/>
+          <column name="requires_id" type="tinyint" default="0"/>
+          <column name="is_combo" type="tinyint" default="0"/>
+          <column name="brand" type="varchar" length="255"/>
+          <column name="status" type="enum" values="available,out_of_stock,archived" default="available"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_sku" unique="1">
+            <column name="sku"/>
+          </index>
+          <index name="idx_barcode" unique="1">
+            <column name="barcode"/>
+          </index>
+          <index name="idx_category_id">
+            <column name="category_id"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="product_images">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="product_id" type="bigint" isNotNull="1" refTable="products"/>
+          <column name="image_path" type="varchar" length="255" isNotNull="1"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+      </table>
+      
+      <table name="containers">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="name" type="varchar" length="255" isNotNull="1"/>
+          <column name="description" type="text"/>
+          <column name="deposit_price" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="type" type="enum" values="bottle,case,keg" isNotNull="1"/>
+          <column name="status" type="enum" values="active,inactive" default="active"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+      </table>
+      
+      <table name="product_containers">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="product_id" type="bigint" isNotNull="1" refTable="products"/>
+          <column name="container_id" type="bigint" isNotNull="1" refTable="containers"/>
+          <column name="quantity" type="int" default="1"/>
+          <column name="is_returnable" type="tinyint" default="1"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+      </table>
+      
+      <!-- 4. LOTES CON VENCIMIENTO - CRÍTICO -->
+      <table name="product_batches">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="product_id" type="bigint" isNotNull="1" refTable="products"/>
+          <column name="batch_number" type="varchar" length="100" isNotNull="1"/>
+          <column name="supplier_id" type="bigint" refTable="suppliers"/>
+          <column name="quantity_received" type="int" isNotNull="1"/>
+          <column name="quantity_available" type="int" isNotNull="1"/>
+          <column name="quantity_expired" type="int" default="0"/>
+          <column name="manufacturing_date" type="date"/>
+          <column name="expiration_date" type="date" isNotNull="1"/>
+          <column name="storage_location" type="varchar" length="255"/>
+          <column name="status" type="enum" values="received,in_stock,partial,expired,disposed" default="in_stock"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_batch_number" unique="1">
+            <column name="batch_number"/>
+          </index>
+          <index name="idx_expiration_date">
+            <column name="expiration_date"/>
+          </index>
+          <index name="idx_product_id">
+            <column name="product_id"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="batch_expiration_alerts">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="batch_id" type="bigint" isNotNull="1" refTable="product_batches"/>
+          <column name="alert_type" type="enum" values="7_days,3_days,expired" isNotNull="1"/>
+          <column name="alert_datetime" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="status" type="enum" values="pending,acknowledged,expired" default="pending"/>
+          <column name="notified_user_id" type="bigint" refTable="users"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+      </table>
+      
+      <!-- 5. COMPRAS -->
+      <table name="purchases">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="supplier_id" type="bigint" refTable="suppliers"/>
+          <column name="user_id" type="bigint" isNotNull="1" refTable="users"/>
+          <column name="document_type_id" type="bigint" isNotNull="1" refTable="document_types"/>
+          <column name="total_cost" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="purchase_datetime" type="timestamp" isNotNull="1"/>
+          <column name="status" type="enum" values="pending,completed,cancelled" default="completed"/>
+          <column name="purchase_invoice" type="varchar" length="255"/>
+          <column name="pdf_url" type="varchar" length="255"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_status">
+            <column name="status"/>
+          </index>
+          <index name="idx_purchase_datetime">
+            <column name="purchase_datetime"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="purchase_details">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="purchase_id" type="bigint" isNotNull="1" refTable="purchases"/>
+          <column name="product_id" type="bigint" isNotNull="1" refTable="products"/>
+          <column name="quantity" type="int" isNotNull="1"/>
+          <column name="unit_cost" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="subtotal" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+      </table>
+      
+      <!-- 6. VENTAS - CRÍTICO -->
+      <table name="sales">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="customer_id" type="bigint" refTable="customers"/>
+          <column name="user_id" type="bigint" isNotNull="1" refTable="users"/>
+          <column name="document_type_id" type="bigint" isNotNull="1" refTable="document_types"/>
+          <column name="cash_shift_id" type="bigint" refTable="cash_shifts"/>
+          <column name="sale_number" type="varchar" length="100" isNotNull="1"/>
+          <column name="subtotal" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="tax" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="discount" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="container_deposits" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="total_price" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="paid_amount" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="change_amount" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="debt_amount" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="is_credit" type="tinyint" default="0"/>
+          <column name="refund_requested" type="tinyint" default="0"/>
+          <column name="refund_amount" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="sale_datetime" type="timestamp" isNotNull="1"/>
+          <column name="status" type="enum" values="pending,completed,cancelled" default="completed"/>
+          <column name="invoice_number" type="varchar" length="255"/>
+          <column name="pdf_url" type="varchar" length="255"/>
+          <column name="notes" type="text"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_sale_number" unique="1">
+            <column name="sale_number"/>
+          </index>
+          <index name="idx_status">
+            <column name="status"/>
+          </index>
+          <index name="idx_sale_datetime">
+            <column name="sale_datetime"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="sale_details">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="sale_id" type="bigint" isNotNull="1" refTable="sales"/>
+          <column name="product_id" type="bigint" isNotNull="1" refTable="products"/>
+          <column name="batch_id" type="bigint" refTable="product_batches"/>
+          <column name="quantity" type="int" isNotNull="1"/>
+          <column name="unit_price" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="subtotal" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="container_quantity" type="int" default="0"/>
+          <column name="container_deposit" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="expiration_date" type="date"/>
+          <column name="is_returned" type="tinyint" default="0"/>
+          <column name="returned_date" type="date"/>
+          <column name="return_reason" type="text"/>
+          <column name="returned_quantity" type="int" default="0"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_sale_id">
+            <column name="sale_id"/>
+          </index>
+          <index name="idx_product_id">
+            <column name="product_id"/>
+          </index>
+        </indices>
+      </table>
+      
+      <!-- 7. PAGOS MIXTOS - CRÍTICO -->
+      <table name="sale_payments">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="sale_id" type="bigint" isNotNull="1" refTable="sales"/>
+          <column name="payment_method" type="enum" values="cash,transfer,card,check,credit" isNotNull="1"/>
+          <column name="amount" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="reference_number" type="varchar" length="255"/>
+          <column name="payment_datetime" type="timestamp" defaultValue="CURRENT_TIMESTAMP" isNotNull="1"/>
+          <column name="status" type="enum" values="pending,completed,failed" default="completed"/>
+          <column name="notes" type="text"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_payment_method">
+            <column name="payment_method"/>
+          </index>
+          <index name="idx_status">
+            <column name="status"/>
+          </index>
+        </indices>
+      </table>
+      
+      <!-- 8. DEVOLUCIONES/REEMBOLSOS - CRÍTICO -->
+      <table name="sale_refunds">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="sale_id" type="bigint" isNotNull="1" refTable="sales"/>
+          <column name="refund_type" type="enum" values="full,partial" isNotNull="1"/>
+          <column name="original_amount" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="refund_amount" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="reason" type="varchar" length="255" isNotNull="1"/>
+          <column name="status" type="enum" values="pending,approved,rejected,completed" default="pending"/>
+          <column name="created_by" type="bigint" isNotNull="1" refTable="users"/>
+          <column name="approved_by" type="bigint" refTable="users"/>
+          <column name="refund_datetime" type="timestamp"/>
+          <column name="notes" type="text"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_status">
+            <column name="status"/>
+          </index>
+          <index name="idx_refund_datetime">
+            <column name="refund_datetime"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="refund_payments">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="refund_id" type="bigint" isNotNull="1" refTable="sale_refunds"/>
+          <column name="payment_method" type="enum" values="cash,transfer,card" isNotNull="1"/>
+          <column name="amount" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="reference_number" type="varchar" length="255"/>
+          <column name="payment_datetime" type="timestamp" defaultValue="CURRENT_TIMESTAMP" isNotNull="1"/>
+          <column name="status" type="enum" values="pending,completed,failed" default="pending"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+      </table>
+      
+      <!-- 9. CRÉDITOS -->
+      <table name="customer_credits">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="customer_id" type="bigint" isNotNull="1" refTable="customers"/>
+          <column name="credit_limit" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="current_debt" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="credit_enabled" type="tinyint" default="0"/>
+          <column name="payment_days" type="int" default="30"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="unique_customer" unique="1">
+            <column name="customer_id"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="credit_payments">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="customer_id" type="bigint" isNotNull="1" refTable="customers"/>
+          <column name="sale_id" type="bigint" refTable="sales"/>
+          <column name="amount" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="payment_method" type="enum" values="cash,transfer,card" default="cash"/>
+          <column name="payment_datetime" type="timestamp" defaultValue="CURRENT_TIMESTAMP" isNotNull="1"/>
+          <column name="user_id" type="bigint" isNotNull="1" refTable="users"/>
+          <column name="notes" type="text"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+      </table>
+      
+      <!-- 10. CAJA Y TURNOS -->
+      <table name="cash_registers">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="name" type="varchar" length="255" isNotNull="1"/>
+          <column name="description" type="text"/>
+          <column name="status" type="enum" values="active,inactive" default="active"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+      </table>
+      
+      <table name="cash_shifts">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="cash_register_id" type="bigint" isNotNull="1" refTable="cash_registers"/>
+          <column name="user_id" type="bigint" isNotNull="1" refTable="users"/>
+          <column name="opening_balance" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="expected_balance" type="decimal" precision="10" scale="2"/>
+          <column name="actual_balance" type="decimal" precision="10" scale="2"/>
+          <column name="difference" type="decimal" precision="10" scale="2"/>
+          <column name="opening_datetime" type="timestamp" defaultValue="CURRENT_TIMESTAMP" isNotNull="1"/>
+          <column name="closing_datetime" type="timestamp"/>
+          <column name="status" type="enum" values="open,closed" default="open"/>
+          <column name="opening_notes" type="text"/>
+          <column name="closing_notes" type="text"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_status">
+            <column name="status"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="cash_movements">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="cash_shift_id" type="bigint" isNotNull="1" refTable="cash_shifts"/>
+          <column name="type" type="enum" values="sale,expense,withdrawal,deposit" isNotNull="1"/>
+          <column name="amount" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="payment_method" type="enum" values="cash,card,transfer,credit" default="cash"/>
+          <column name="reference_id" type="bigint"/>
+          <column name="description" type="text" isNotNull="1"/>
+          <column name="user_id" type="bigint" isNotNull="1" refTable="users"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_type">
+            <column name="type"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="container_movements">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="container_id" type="bigint" isNotNull="1" refTable="containers"/>
+          <column name="customer_id" type="bigint" refTable="customers"/>
+          <column name="sale_id" type="bigint" refTable="sales"/>
+          <column name="type" type="enum" values="out,return" isNotNull="1"/>
+          <column name="quantity" type="int" isNotNull="1"/>
+          <column name="deposit_amount" type="decimal" precision="10" scale="2"/>
+          <column name="user_id" type="bigint" isNotNull="1" refTable="users"/>
+          <column name="movement_datetime" type="timestamp" defaultValue="CURRENT_TIMESTAMP" isNotNull="1"/>
+          <column name="notes" type="text"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_type">
+            <column name="type"/>
+          </index>
+        </indices>
+      </table>
+      
+      <!-- 11. DESCUENTOS -->
+      <table name="discounts">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="name" type="varchar" length="255" isNotNull="1"/>
+          <column name="description" type="text"/>
+          <column name="type" type="enum" values="percentage,fixed_amount" isNotNull="1"/>
+          <column name="value" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="start_date" type="date"/>
+          <column name="end_date" type="date"/>
+          <column name="min_purchase_amount" type="decimal" precision="10" scale="2"/>
+          <column name="is_active" type="tinyint" default="1"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_is_active">
+            <column name="is_active"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="discount_products">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="discount_id" type="bigint" isNotNull="1" refTable="discounts"/>
+          <column name="product_id" type="bigint" isNotNull="1" refTable="products"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="unique_discount_product" unique="1">
+            <column name="discount_id"/>
+            <column name="product_id"/>
+          </index>
+        </indices>
+      </table>
+      
+      <!-- 12. GASTOS -->
+      <table name="expenses">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="concept" type="varchar" length="255" isNotNull="1"/>
+          <column name="description" type="text"/>
+          <column name="amount" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="category" type="enum" values="operational,salary,taxes,maintenance,other" default="other"/>
+          <column name="cash_shift_id" type="bigint" refTable="cash_shifts"/>
+          <column name="user_id" type="bigint" isNotNull="1" refTable="users"/>
+          <column name="expense_datetime" type="timestamp" defaultValue="CURRENT_TIMESTAMP" isNotNull="1"/>
+          <column name="receipt_url" type="varchar" length="255"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_category">
+            <column name="category"/>
+          </index>
+        </indices>
+      </table>
+      
+      <!-- 13. INVENTARIO Y TRANSACCIONES -->
+      <table name="inventories">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="product_id" type="bigint" isNotNull="1" refTable="products"/>
+          <column name="type" type="enum" values="purchase,sale,adjustment" isNotNull="1"/>
+          <column name="quantity" type="int" isNotNull="1"/>
+          <column name="reason" type="text"/>
+          <column name="user_id" type="bigint" isNotNull="1" refTable="users"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_type">
+            <column name="type"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="transactions">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="type" type="enum" values="purchase,sale,payment,refund,adjustment" isNotNull="1"/>
+          <column name="amount" type="decimal" precision="10" scale="2" isNotNull="1"/>
+          <column name="reference_id" type="bigint"/>
+          <column name="description" type="text"/>
+          <column name="user_id" type="bigint" isNotNull="1" refTable="users"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_type">
+            <column name="type"/>
+          </index>
+        </indices>
+      </table>
+      
+      <!-- 14. REPORTES -->
+      <table name="daily_summaries">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="summary_date" type="date" isNotNull="1"/>
+          <column name="total_sales" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="total_purchases" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="total_expenses" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="cash_sales" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="card_sales" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="transfer_sales" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="credit_sales" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="sales_count" type="int" default="0"/>
+          <column name="containers_out" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="containers_returned" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="total_refunds" type="decimal" precision="10" scale="2" default="0"/>
+          <column name="products_expired" type="int" default="0"/>
+          <column name="created_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+          <column name="updated_at" type="timestamp" defaultValue="CURRENT_TIMESTAMP"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_summary_date" unique="1">
+            <column name="summary_date"/>
+          </index>
+        </indices>
+      </table>
+      
+      <!-- 15. SISTEMA -->
+      <table name="cache">
+        <columns>
+          <column name="key_name" type="varchar" length="255" isNotNull="1"/>
+          <column name="value" type="longtext" isNotNull="1"/>
+          <column name="expiration" type="int"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="key_name"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="jobs">
+        <columns>
+          <column name="id" type="bigint" isAutoIncrement="1" isNotNull="1"/>
+          <column name="queue" type="varchar" length="255" isNotNull="1"/>
+          <column name="payload" type="longtext" isNotNull="1"/>
+          <column name="attempts" type="tinyint" default="0" isNotNull="1"/>
+          <column name="reserved_at" type="int"/>
+          <column name="available_at" type="int" isNotNull="1"/>
+          <column name="created_at" type="int" isNotNull="1"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_queue">
+            <column name="queue"/>
+          </index>
+        </indices>
+      </table>
+      
+      <table name="sessions">
+        <columns>
+          <column name="id" type="varchar" length="255" isNotNull="1"/>
+          <column name="user_id" type="bigint" refTable="users"/>
+          <column name="ip_address" type="varchar" length="45"/>
+          <column name="user_agent" type="text"/>
+          <column name="payload" type="longtext" isNotNull="1"/>
+          <column name="last_activity" type="int" isNotNull="1"/>
+        </columns>
+        <indices>
+          <index name="PRIMARY" type="PRIMARY" unique="1">
+            <column name="id"/>
+          </index>
+          <index name="idx_user_id">
+            <column name="user_id"/>
+          </index>
+        </indices>
+      </table>
+    </schemata>
+  </document>
