@@ -16,6 +16,7 @@ class Purchase extends Model
         "purchase_datetime",
         "status",
         "purchase_invoice",
+        "pdf_url"
     ];
 
     public function supplier()
